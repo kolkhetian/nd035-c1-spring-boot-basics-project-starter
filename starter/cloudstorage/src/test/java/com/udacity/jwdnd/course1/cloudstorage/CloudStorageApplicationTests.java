@@ -1,7 +1,5 @@
 package com.udacity.jwdnd.course1.cloudstorage;
 
-import com.udacity.jwdnd.course1.cloudstorage.mapper.CredentialMapper;
-import com.udacity.jwdnd.course1.cloudstorage.mapper.NoteMapper;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.commons.lang3.ObjectUtils;
 import org.junit.jupiter.api.*;
@@ -12,27 +10,21 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@ActiveProfiles("test")
 class CloudStorageApplicationTests
 {
-	@Autowired
-	private NoteMapper noteMapper;
-	private CredentialMapper credentialMapper;
-
 	@LocalServerPort
-	private int port = 8080;
-	private final String host = "http://localhost:" + port;
-	private final String logIn = host + "/login";
-	private final String sigUp = host + "/signup";
-	private final String home = host + "/home";
+	private int port;
 	private WebDriver driver;
 
 	@BeforeAll
@@ -58,61 +50,86 @@ class CloudStorageApplicationTests
 
 	@Test
 	@Order(1)
-	public void visitLogInWithoutAuth()
+	public void loginPageTest()
 	{
-		driver.get(home);
-		String actualResult = driver.getCurrentUrl();
-		Assertions.assertEquals(actualResult, logIn);
+		driver.get("http://localhost:" + this.port + "/login");
+		Assertions.assertEquals("Login", driver.getTitle());
 	}
 
 	@Test
 	@Order(2)
-	public void visitSignUpWithoutAuth()
+	public void signUpPageTest()
 	{
-		driver.get(sigUp);
-		String actualResult = driver.getCurrentUrl();
-		Assertions.assertEquals(actualResult, sigUp);
+		driver.get("http://localhost:" + this.port + "/signup");
+		Assertions.assertEquals("Sign Up", driver.getTitle());
 	}
 
 	@Test
 	@Order(3)
-	public void visitHomeWithoutAuth()
+	public void signUpTest()
 	{
-		driver.get(home);
-		String actualResult = driver.getCurrentUrl();
-		Assertions.assertEquals(actualResult, logIn);
+		final String firstName = "Serdar";
+		final String lastName  = "Semiz";
+		final String username  = "serdars";
+		final String password  = "123456";
+
+		WebDriverWait wait = new WebDriverWait (driver, 30);
+		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+		driver.get("http://localhost:" + this.port + "/signup");
+
+		JavascriptExecutor jse =(JavascriptExecutor) driver;
+
+		WebElement inputFirstName = driver.findElement(By.id("inputFirstName"));
+		wait.until(ExpectedConditions.elementToBeClickable(inputFirstName)).click();
+
+		WebElement inputLastName= driver.findElement(By.id("inputLastName"));
+		wait.until(ExpectedConditions.elementToBeClickable(inputLastName)).click();
+
+		WebElement inputUsername= driver.findElement(By.id("inputUsername"));
+		wait.until(ExpectedConditions.elementToBeClickable(inputUsername)).click();
+
+		WebElement inputPassword= driver.findElement(By.id("inputPassword"));
+		wait.until(ExpectedConditions.elementToBeClickable(inputPassword)).click();
+
+		inputFirstName.sendKeys(firstName);
+		inputLastName.sendKeys(lastName);
+		inputUsername.sendKeys(username);
+		inputPassword.sendKeys(password);
+
+		WebElement buttonSignUp = driver.findElement(By.id("buttonSignUp"));
+		wait.until(ExpectedConditions.elementToBeClickable(buttonSignUp)).click();
+
+		Assertions.assertEquals("Sign Up", driver.getTitle());
 	}
 
 	@Test
 	@Order(4)
-	public void visitHomeWithAuth()
+	public void loginTest()
 	{
-		final String firstName = "Serdar";
-		final String lastName = "Semiz";
 		final String username = "serdars";
 		final String password = "123456";
 
-		//Sign up
-		driver.get(sigUp);
-		driver.findElement(By.id("inputFirstName")).sendKeys(firstName);
-		driver.findElement(By.id("inputLastName")).sendKeys(lastName);
-		driver.findElement(By.id("inputUsername")).sendKeys(username);
-		driver.findElement(By.id("inputPassword")).sendKeys(password);
-		driver.findElement(By.id("inputPassword")).submit();
+		WebDriverWait wait = new WebDriverWait (driver, 30);
 
-		// Log in
-		driver.get(logIn);
-		driver.findElement(By.id("inputUsername")).sendKeys(username);
-		driver.findElement(By.id("inputPassword")).sendKeys(password);
-		driver.findElement(By.id("inputPassword")).submit();
+		driver.get("http://localhost:" + this.port + "/login");
 
-		String actualResult = driver.getCurrentUrl();
-		Assertions.assertEquals(actualResult, home);
+		JavascriptExecutor jse =(JavascriptExecutor) driver;
+
+		WebElement usernameElement = driver.findElement(By.id("inputUsername"));
+		usernameElement.sendKeys(username);
+
+		WebElement passwordElement = driver.findElement(By.id("inputPassword"));
+		passwordElement.sendKeys(password);
+
+		WebElement loginElement = driver.findElement(By.id("buttonLogIn"));
+		loginElement.click();
+		System.out.println(driver.getTitle());
+		Assertions.assertEquals("Home", driver.getTitle());
 	}
 
 	@Test
 	@Order(5)
-	public void createNote()
+	public void createNoteTest()
 	{
 		String username = "serdars";
 		String password = "123456";
@@ -121,8 +138,11 @@ class CloudStorageApplicationTests
 		String noteDescription = "Lorem ipsum dolor sit amet..";
 
 		WebDriverWait wait = new WebDriverWait (driver, 30);
-		driver.get(logIn);
+
+		driver.get("http://localhost:" + this.port + "/login");
+
 		driver.manage().window().maximize();
+
 		JavascriptExecutor jse =(JavascriptExecutor) driver;
 
 		WebElement usernameElement = driver.findElement(By.id("inputUsername"));
@@ -177,7 +197,7 @@ class CloudStorageApplicationTests
 
 	@Test
 	@Order(6)
-	public void updateNote()
+	public void updateNoteTest()
 	{
 		String username = "serdars";
 		String password = "123456";
@@ -186,7 +206,7 @@ class CloudStorageApplicationTests
 		String noteDescription = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr.";
 
 		WebDriverWait wait = new WebDriverWait (driver, 30);
-		driver.get(logIn);
+		driver.get("http://localhost:" + this.port + "/login");
 		driver.manage().window().maximize();
 		JavascriptExecutor jse =(JavascriptExecutor) driver;
 
@@ -270,13 +290,13 @@ class CloudStorageApplicationTests
 
 	@Test
 	@Order(7)
-	public void deleteNote()
+	public void deleteNoteTest()
 	{
 		String username = "serdars";
 		String password = "123456";
 
 		WebDriverWait wait = new WebDriverWait (driver, 30);
-		driver.get(logIn);
+		driver.get("http://localhost:" + this.port + "/login");
 		driver.manage().window().maximize();
 		JavascriptExecutor jse =(JavascriptExecutor) driver;
 
@@ -336,7 +356,7 @@ class CloudStorageApplicationTests
 
 	@Test
 	@Order(8)
-	public void createCredential()
+	public void createCredentialTest()
 	{
 		String username = "serdars";
 		String password = "123456";
@@ -346,7 +366,7 @@ class CloudStorageApplicationTests
 		String credentialPassword = "test";
 
 		WebDriverWait wait = new WebDriverWait (driver, 30);
-		driver.get(logIn);
+		driver.get("http://localhost:" + this.port + "/login");
 		driver.manage().window().maximize();
 		JavascriptExecutor jse =(JavascriptExecutor) driver;
 
@@ -406,7 +426,7 @@ class CloudStorageApplicationTests
 
 	@Test
 	@Order(9)
-	public void updateCredential()
+	public void updateCredentialTest()
 	{
 		String username = "serdars";
 		String password = "123456";
@@ -416,7 +436,7 @@ class CloudStorageApplicationTests
 		String credentialPassword = "test";
 
 		WebDriverWait wait = new WebDriverWait (driver, 30);
-		driver.get(logIn);
+		driver.get("http://localhost:" + this.port + "/login");
 		driver.manage().window().maximize();
 		JavascriptExecutor jse =(JavascriptExecutor) driver;
 
@@ -500,13 +520,13 @@ class CloudStorageApplicationTests
 
 	@Test
 	@Order(10)
-	public void deleteCredential()
+	public void deleteCredentialTest()
 	{
 		String username = "serdars";
 		String password = "123456";
 
 		WebDriverWait wait = new WebDriverWait (driver, 30);
-		driver.get(logIn);
+		driver.get("http://localhost:" + this.port + "/login");
 		driver.manage().window().maximize();
 		JavascriptExecutor jse =(JavascriptExecutor) driver;
 
